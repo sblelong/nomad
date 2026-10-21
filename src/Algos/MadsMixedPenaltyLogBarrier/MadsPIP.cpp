@@ -220,7 +220,6 @@ void NOMAD::MadsPIP::init()
     _b_rhobeta_rho = _runParams->getAttributeValue<NOMAD::Double>("MADSPIP_OPTIMIZATION_BRHOBETA_RHO").todouble();
     printf("DEBUG _b_rhobeta_rho = %f\n", _b_rhobeta_rho);
     
-    auto evc = NOMAD::EvcInterface::getEvaluatorControl();
     printf("DEBUG evc = %p\n", (void*)evc.get());
 
     evc->setComputeType(NOMAD::ComputeType::USER, meritZCompute,
