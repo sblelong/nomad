@@ -67,6 +67,8 @@
 
 void NOMAD::MadsPIP::init()
 {
+    printf("DEBUG MadsPIP::init() start\n");
+
     // Define the single-objective merit function with inequality constraints as penalty.
     std::function<NOMAD::Double(const NOMAD::BBOutputTypeList& bbOutputTypeList,
                                 const NOMAD::BBOutput& bbOutput)> meritZCompute = [&](const NOMAD::BBOutputTypeList& bbOutputTypeList,
@@ -211,7 +213,23 @@ void NOMAD::MadsPIP::init()
     auto evc = NOMAD::EvcInterface::getEvaluatorControl();
     evc->setComputeType(NOMAD::ComputeType::USER, meritZCompute, [](const NOMAD::BBOutputTypeList& bbOutputTypeList,
                                                                     const NOMAD::BBOutput& bbOutput){return NOMAD::Double(0);});
+
+     _logSwitchFeasThres = _runParams->getAttributeValue<NOMAD::Double>("MADSPIP_OPTIMIZATION_SWITCH_FEASIBILITY_THRESHOLD").todouble();
+    printf("DEBUG _logSwitchFeasThres = %f\n", _logSwitchFeasThres);
     
+    _b_rhobeta_rho = _runParams->getAttributeValue<NOMAD::Double>("MADSPIP_OPTIMIZATION_BRHOBETA_RHO").todouble();
+    printf("DEBUG _b_rhobeta_rho = %f\n", _b_rhobeta_rho);
+    
+    auto evc = NOMAD::EvcInterface::getEvaluatorControl();
+    printf("DEBUG evc = %p\n", (void*)evc.get());
+
+    evc->setComputeType(NOMAD::ComputeType::USER, meritZCompute,
+                    [](const NOMAD::BBOutputTypeList& bbOutputTypeList,
+                       const NOMAD::BBOutput& bbOutput)
+                    {
+                        return NOMAD::Double(0);
+                    });
+    printf("DEBUG MadsPIP::init() end\n");
 }
 
 ///*-----------------------------------------------------*/
