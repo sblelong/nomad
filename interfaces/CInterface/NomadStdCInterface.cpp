@@ -591,6 +591,7 @@ public:
 void customMegaIterEndCbFunc(const NOMAD::Step& step,
                              bool &stop)
 {
+    printf("DEBUG customMegaIterEndCbFunc: entered\n");
     stop = false;
     
     // Important: by default USER_CALLS are disabled when doing quad model optimization
@@ -659,6 +660,7 @@ void customMegaIterEndCbFunc(const NOMAD::Step& step,
             //Force exit
         }
     }
+    printf("DEBUG customMegaIterEndCbFunc: end\n");
 }
 
 int solveNomadProblem(const NomadResult result,
@@ -741,7 +743,6 @@ int solveNomadProblem(const NomadResult result,
         
         // Link MEGA_ITER_END callback function with user C function defined locally
         TheMainStep.addCallback<NOMAD::AlgoCallbackType::MEGA_ITERATION_END>(customMegaIterEndCbFunc);
-        
         
         TheMainStep.start();
         TheMainStep.run();
