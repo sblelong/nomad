@@ -254,19 +254,29 @@ void NOMAD::MadsPIP::megaIterationCallback(const NOMAD::Step& step,
         const auto & barrier = iter->getBarrier();
         const auto & bf = barrier->getCurrentIncumbentFeas();
         printf("DEBUG megaIterationCallback: bf = %p\n", (void*)bf.get());
-        if (bf == nullptr)
-        {
-            printf("DEBUG megaIterationCallback: bf is nullptr, returning\n");
-            return;
-        }
+
         const auto & evalType = barrier->getEvalType();
         const auto & computeType = barrier->getFHComputeType().Short() ;
+
+        auto eval = bf->getEval(evalType);
+        printf("DEBUG megaIterationCallback: eval = %p\n", (void*)eval);
+        if (eval == nullptr)
+        {
+            printf("DEBUG megaIterationCallback: eval is nullptr, returning\n");
+            return;
+        }
+
+        const auto & bbo = eval->getBBOutput();
+        printf("DEBUG megaIterationCallback: bbo isComplete = %d\n", 
+       (int)bbo.isComplete(eval->getBBOutputTypeList()));
 
         bool rhoHasChanged = false, typeHasChanged = false;
 
         // Get all outputs but only inequality constraints are needed.
         // Need all output because _G indices are defined with respect to all outputs.
-        const auto & allO = bf->getEval(evalType)->getBBOutput().getBBOAsArrayOfDouble();
+        const auto & allO = bbo.getBBOAsArrayOfDouble();
+        printf("DEBUG megaIterationCallback: allO isDefined = %d size = %zu\n", 
+       (int)allO.isDefined(), allO.size());
 
         OUTPUT_DEBUG_START
         std::string s = "Best feasible before update: BBO (" + allO.display() + "); meritZ=" + bf->getEval(evalType)->getFs(computeType).display() + "\n" ;
