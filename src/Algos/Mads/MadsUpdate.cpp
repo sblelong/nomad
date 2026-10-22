@@ -130,7 +130,12 @@ bool NOMAD::MadsUpdate::runImp()
         // Compute success
         // Get which of newBestFeas and newBestInf is improving
         // the solution. Check newBestFeas first.
-        auto computeType = barrier->getFHComputeType();
+        auto evc = NOMAD::EvcInterface::getEvaluatorControl();
+        NOMAD::FHComputeType computeType = barrier->getFHComputeType();
+        if (nullptr != evc)
+        {
+            computeType.fhComputeTypeS = evc->getFHComputeTypeS();
+        }
         
         NOMAD::ComputeSuccessType computeSuccess(computeType);
         std::shared_ptr<NOMAD::EvalPoint> newBest;
