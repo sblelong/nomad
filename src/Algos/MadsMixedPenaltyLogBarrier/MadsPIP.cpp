@@ -238,27 +238,26 @@ void NOMAD::MadsPIP::init()
 void NOMAD::MadsPIP::megaIterationCallback(const NOMAD::Step& step,
                                             bool &stop)
 {
+    printf("DEBUG megaIterationCallback: entered\n");
     auto iter = dynamic_cast<const NOMAD::MadsMegaIteration*>(&step);
-
     auto success_type = iter->getMadsIterationSuccess();
 
     if (nullptr != iter)
     {
         const auto & barrier = iter->getBarrier();
         const auto & bf = barrier->getCurrentIncumbentFeas();
+        printf("DEBUG megaIterationCallback: bf = %p\n", (void*)bf.get());
 
         const auto & evalType = barrier->getEvalType();
-
-        // Get compute type from evaluator control to ensure meritZCompute function is set.
-        // Using barrier->getFHComputeType().Short() would return a FHComputeTypeS with
-        // defaultEmptySingleOutputCompute instead of meritZCompute, causing a crash
-        // after resetFValues() is called.
         auto evc = NOMAD::EvcInterface::getEvaluatorControl();
         const auto computeType = evc->getFHComputeTypeS();
+        printf("DEBUG megaIterationCallback: computeType obtained from evc\n");
 
         bool rhoHasChanged = false, typeHasChanged = false;
 
         const auto & allO = bf->getEval(evalType)->getBBOutput().getBBOAsArrayOfDouble();
+        printf("DEBUG megaIterationCallback: allO isDefined=%d size=%zu\n",
+               (int)allO.isDefined(), allO.size());
 
         OUTPUT_DEBUG_START
         std::string s = "Best feasible before update: BBO (" + allO.display() + "); meritZ=" + bf->getEval(evalType)->getFs(computeType).display() + "\n" ;
@@ -334,6 +333,8 @@ void NOMAD::MadsPIP::megaIterationCallback(const NOMAD::Step& step,
             cacheInterface.find(func, evalPointList);
             barrier->updateWithPoints(evalPointList,false, true /*update incumbent*/);
         }
+
+        printf("DEBUG megaIterationCallback: end\n");
     }
 }
 
