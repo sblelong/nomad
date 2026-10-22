@@ -74,40 +74,30 @@ void NOMAD::MadsPIP::init()
                                 const NOMAD::BBOutput& bbOutput)> meritZCompute = [&](const NOMAD::BBOutputTypeList& bbOutputTypeList,
                                                                                       const NOMAD::BBOutput& bbOutput) -> NOMAD::Double
     {
-        printf("DEBUG meritZCompute: start, bbOutput isComplete = %d\n", 
-           (int)bbOutput.isComplete(bbOutputTypeList));
-
         if (!bbOutput.getEvalOk() || bbOutputTypeList.empty())
         {
-            printf("DEBUG meritZCompute: early return INF\n");
             return NOMAD::INF;
         }
         
         if (!bbOutput.checkSizeMatch(bbOutputTypeList))
         {
-            printf("DEBUG meritZCompute: size mismatch return INF\n");
             return NOMAD::INF;
         }
         
         // IMPORTANT: the _Glog, _GextI and _GextE are indices based on ALL outputs.
         NOMAD::Double meritZ = 0;
         const auto & allO = bbOutput.getBBOAsArrayOfDouble();
-        printf("DEBUG meritZCompute: allO isDefined = %d size = %zu\n",
-           (int)allO.isDefined(), allO.size());
         
         if (allO.size() == 1)
         {
-            printf("DEBUG meritZCompute: single output case\n");
             // This is in case the algo is used for an unconstrained pb!
             meritZ += bbOutput.getObjective(bbOutputTypeList);
             return meritZ;
         }
         
         // Initialization of Glog and Gext
-        printf("DEBUG meritZCompute: before Glog/GextI/GextE init check\n");
         if (_Glog.empty() && _GextI.empty() && _GextE.empty())
         {
-            printf("DEBUG meritZCompute: initializing Glog/GextI/GextE\n");
             
             // Possible improvments: use EB and handle it properly.
             // EB: constraint that should never goes into ext. If initially
@@ -146,7 +136,6 @@ void NOMAD::MadsPIP::init()
         // Initialization of rhoExt
         if (!_b_rho_cext.isDefined())
         {
-            printf("DEBUG meritZCompute: initializing _b_rho_cext\n");
             NOMAD::ArrayOfDouble Fs = bbOutput.getObjectives(bbOutputTypeList);
             if (Fs.size() > 1)
             {
@@ -164,7 +153,6 @@ void NOMAD::MadsPIP::init()
             }
         }
         
-        printf("DEBUG meritZCompute: before logSum computation\n");
         // Compute the log barrier contribution to the merit function
         double logSum=0;
         for (const auto i: _Glog)
@@ -206,7 +194,6 @@ void NOMAD::MadsPIP::init()
             meritZ += obj;
         }
         
-        printf("DEBUG meritZCompute: end, meritZ = %f\n", meritZ.todouble());
         return meritZ;
     };
     
@@ -251,45 +238,27 @@ void NOMAD::MadsPIP::init()
 void NOMAD::MadsPIP::megaIterationCallback(const NOMAD::Step& step,
                                             bool &stop)
 {
-    // Important: by default USER_CALLS are disabled when doing quad model optimization.
-
-    // Several NOMAD::Algorithm are used by NOMAD.
-    // We are interested only on the main Mads (Mega) Iteration.
-    // Use a dynamic cast to make sure with have the Mads (Mega) Iteration.
     auto iter = dynamic_cast<const NOMAD::MadsMegaIteration*>(&step);
 
-    // Fetch the iteration success, not the mega iteration success (because it is reset at start)
-    // to get previous iteration success type.
     auto success_type = iter->getMadsIterationSuccess();
 
     if (nullptr != iter)
     {
         const auto & barrier = iter->getBarrier();
         const auto & bf = barrier->getCurrentIncumbentFeas();
-        printf("DEBUG megaIterationCallback: bf = %p\n", (void*)bf.get());
 
         const auto & evalType = barrier->getEvalType();
-        const auto & computeType = barrier->getFHComputeType().Short() ;
 
-        auto eval = bf->getEval(evalType);
-        printf("DEBUG megaIterationCallback: eval = %p\n", (void*)eval);
-        if (eval == nullptr)
-        {
-            printf("DEBUG megaIterationCallback: eval is nullptr, returning\n");
-            return;
-        }
-
-        const auto & bbo = eval->getBBOutput();
-        printf("DEBUG megaIterationCallback: bbo isComplete = %d\n", 
-       (int)bbo.isComplete(eval->getBBOutputTypeList()));
+        // Get compute type from evaluator control to ensure meritZCompute function is set.
+        // Using barrier->getFHComputeType().Short() would return a FHComputeTypeS with
+        // defaultEmptySingleOutputCompute instead of meritZCompute, causing a crash
+        // after resetFValues() is called.
+        auto evc = NOMAD::EvcInterface::getEvaluatorControl();
+        const auto computeType = evc->getFHComputeTypeS();
 
         bool rhoHasChanged = false, typeHasChanged = false;
 
-        // Get all outputs but only inequality constraints are needed.
-        // Need all output because _G indices are defined with respect to all outputs.
-        const auto & allO = bbo.getBBOAsArrayOfDouble();
-        printf("DEBUG megaIterationCallback: allO isDefined = %d size = %zu\n", 
-       (int)allO.isDefined(), allO.size());
+        const auto & allO = bf->getEval(evalType)->getBBOutput().getBBOAsArrayOfDouble();
 
         OUTPUT_DEBUG_START
         std::string s = "Best feasible before update: BBO (" + allO.display() + "); meritZ=" + bf->getEval(evalType)->getFs(computeType).display() + "\n" ;
@@ -299,7 +268,7 @@ void NOMAD::MadsPIP::megaIterationCallback(const NOMAD::Step& step,
         if (success_type == SuccessType::UNSUCCESSFUL)
         {
             double comp;
-            double gmax = NOMAD::M_INF; // for bf, g_l(xk)<=0 for all l in Glog 
+            double gmax = NOMAD::M_INF;
             for (const auto i: _Glog)
             {
                 double g = allO[i].todouble();
@@ -327,14 +296,11 @@ void NOMAD::MadsPIP::megaIterationCallback(const NOMAD::Step& step,
             }
         }
         {
-            // Implement switch of type GextI -> Glog
             if (_extToLogSwitch)
             {
                 auto it=_GextI.begin();
                 while (it != _GextI.end())
                 {
-
-                    // We can switch from _Gext to _Glog if constraints becomes strictly feasible
                     if (allO[*it].todouble() < -_logSwitchFeasThres )
                     {
                         _Glog.push_back(*it);
@@ -353,10 +319,8 @@ void NOMAD::MadsPIP::megaIterationCallback(const NOMAD::Step& step,
         if ( _updateBestPoint && (rhoHasChanged || typeHasChanged))
         {
             bf->resetFValues();
-            auto evc = NOMAD::EvcInterface::getEvaluatorControl();
             evc->getBestIncumbent(-1)->resetFValues();
 
-            // Update barrier with the point from the cache having the best merit
             std::function<bool(const EvalPoint&)> func = [&, evalType, computeType](const EvalPoint& evalPoint) -> bool
             {
                 if(evalPoint.isEvalOk(evalType) && evalPoint.getEval(evalType)->isFeasible(computeType) && evalPoint.getEval(evalType)->getFs(computeType)[0] < bf->getEval(evalType)->getFs(computeType)[0])
@@ -370,10 +334,8 @@ void NOMAD::MadsPIP::megaIterationCallback(const NOMAD::Step& step,
             cacheInterface.find(func, evalPointList);
             barrier->updateWithPoints(evalPointList,false, true /*update incumbent*/);
         }
-        printf("DEBUG megaIterationCallback: end\n");
     }
-
-};
+}
 
 void NOMAD::MadsPIP::startImp()
 {
