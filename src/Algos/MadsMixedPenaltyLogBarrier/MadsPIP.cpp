@@ -74,6 +74,9 @@ void NOMAD::MadsPIP::init()
                                 const NOMAD::BBOutput& bbOutput)> meritZCompute = [&](const NOMAD::BBOutputTypeList& bbOutputTypeList,
                                                                                       const NOMAD::BBOutput& bbOutput) -> NOMAD::Double
     {
+        printf("DEBUG meritZCompute: start, bbOutput isComplete = %d\n", 
+           (int)bbOutput.isComplete(bbOutputTypeList));
+           
         if (!bbOutput.getEvalOk() || bbOutputTypeList.empty())
         {
             return NOMAD::INF;
@@ -357,6 +360,7 @@ void NOMAD::MadsPIP::megaIterationCallback(const NOMAD::Step& step,
             cacheInterface.find(func, evalPointList);
             barrier->updateWithPoints(evalPointList,false, true /*update incumbent*/);
         }
+        printf("DEBUG megaIterationCallback: end\n");
     }
 
 };
