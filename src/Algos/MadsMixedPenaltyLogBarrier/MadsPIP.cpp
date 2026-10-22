@@ -253,6 +253,12 @@ void NOMAD::MadsPIP::megaIterationCallback(const NOMAD::Step& step,
     {
         const auto & barrier = iter->getBarrier();
         const auto & bf = barrier->getCurrentIncumbentFeas();
+        printf("DEBUG megaIterationCallback: bf = %p\n", (void*)bf.get());
+        if (bf == nullptr)
+        {
+            printf("DEBUG megaIterationCallback: bf is nullptr, returning\n");
+            return;
+        }
         const auto & evalType = barrier->getEvalType();
         const auto & computeType = barrier->getFHComputeType().Short() ;
 
