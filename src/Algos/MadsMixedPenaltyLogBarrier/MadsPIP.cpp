@@ -76,31 +76,38 @@ void NOMAD::MadsPIP::init()
     {
         printf("DEBUG meritZCompute: start, bbOutput isComplete = %d\n", 
            (int)bbOutput.isComplete(bbOutputTypeList));
-           
+
         if (!bbOutput.getEvalOk() || bbOutputTypeList.empty())
         {
+            printf("DEBUG meritZCompute: early return INF\n");
             return NOMAD::INF;
         }
         
         if (!bbOutput.checkSizeMatch(bbOutputTypeList))
         {
+            printf("DEBUG meritZCompute: size mismatch return INF\n");
             return NOMAD::INF;
         }
         
         // IMPORTANT: the _Glog, _GextI and _GextE are indices based on ALL outputs.
         NOMAD::Double meritZ = 0;
         const auto & allO = bbOutput.getBBOAsArrayOfDouble();
+        printf("DEBUG meritZCompute: allO isDefined = %d size = %zu\n",
+           (int)allO.isDefined(), allO.size());
         
         if (allO.size() == 1)
         {
+            printf("DEBUG meritZCompute: single output case\n");
             // This is in case the algo is used for an unconstrained pb!
             meritZ += bbOutput.getObjective(bbOutputTypeList);
             return meritZ;
         }
         
         // Initialization of Glog and Gext
+        printf("DEBUG meritZCompute: before Glog/GextI/GextE init check\n");
         if (_Glog.empty() && _GextI.empty() && _GextE.empty())
         {
+            printf("DEBUG meritZCompute: initializing Glog/GextI/GextE\n");
             
             // Possible improvments: use EB and handle it properly.
             // EB: constraint that should never goes into ext. If initially
@@ -139,6 +146,7 @@ void NOMAD::MadsPIP::init()
         // Initialization of rhoExt
         if (!_b_rho_cext.isDefined())
         {
+            printf("DEBUG meritZCompute: initializing _b_rho_cext\n");
             NOMAD::ArrayOfDouble Fs = bbOutput.getObjectives(bbOutputTypeList);
             if (Fs.size() > 1)
             {
@@ -156,6 +164,7 @@ void NOMAD::MadsPIP::init()
             }
         }
         
+        printf("DEBUG meritZCompute: before logSum computation\n");
         // Compute the log barrier contribution to the merit function
         double logSum=0;
         for (const auto i: _Glog)
@@ -197,6 +206,7 @@ void NOMAD::MadsPIP::init()
             meritZ += obj;
         }
         
+        printf("DEBUG meritZCompute: end, meritZ = %f\n", meritZ.todouble());
         return meritZ;
     };
     
