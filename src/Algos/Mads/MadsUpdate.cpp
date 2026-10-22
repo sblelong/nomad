@@ -84,6 +84,7 @@ std::string NOMAD::MadsUpdate::getName() const
 
 bool NOMAD::MadsUpdate::runImp()
 {
+    printf("DEBUG MadsUpdate::runImp: entered\n");
     // NOTE: update use success determined from barrier to update mesh
     // The success of parent mega iter is not considered.
     
@@ -130,12 +131,14 @@ bool NOMAD::MadsUpdate::runImp()
         // Compute success
         // Get which of newBestFeas and newBestInf is improving
         // the solution. Check newBestFeas first.
+        printf("DEBUG MadsUpdate::runImp: before computeType\n");
         auto evc = NOMAD::EvcInterface::getEvaluatorControl();
         NOMAD::FHComputeType computeType = barrier->getFHComputeType();
         if (nullptr != evc)
         {
             computeType.fhComputeTypeS = evc->getFHComputeTypeS();
         }
+        printf("DEBUG MadsUpdate::runImp: after computeType\n");
         
         NOMAD::ComputeSuccessType computeSuccess(computeType);
         std::shared_ptr<NOMAD::EvalPoint> newBest;
@@ -339,7 +342,7 @@ bool NOMAD::MadsUpdate::runImp()
         OUTPUT_INFO_END
     }
 
-    
+    printf("DEBUG MadsUpdate::runImp: end\n");
 
     return true;
 }
