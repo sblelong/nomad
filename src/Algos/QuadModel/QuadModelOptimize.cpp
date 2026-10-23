@@ -485,6 +485,16 @@ void NOMAD::QuadModelOptimize::generateTrialPointsImp()
     // Get the best points in their reference dimension
     _bestXFeas = std::make_shared<NOMAD::EvalPoint>(mads->getBestSolution(true));
     _bestXInf  = std::make_shared<NOMAD::EvalPoint>(mads->getBestSolution(false));
+    // Reset shared_ptr to default when no point is available, before any early return:
+    // callers (e.g. QuadModelSinglePass) only test for nullptr.
+    if (!_bestXFeas->isComplete())
+    {
+        _bestXFeas.reset();
+    }
+    if (!_bestXInf->isComplete())
+    {
+        _bestXInf.reset();
+    }
     if (!runOk)
     {
         const auto refCenter = getParentOfType<QuadModelIteration*>()->getRefCenter();
@@ -521,7 +531,7 @@ void NOMAD::QuadModelOptimize::generateTrialPointsImp()
         }
     }
     
-    if (_bestXFeas->isComplete())
+    if (_bestXFeas)
     {
         // New EvalPoint to be evaluated.
         // Add it to the list (local or in Search method).
@@ -534,12 +544,7 @@ void NOMAD::QuadModelOptimize::generateTrialPointsImp()
         AddOutputInfo(s);
         OUTPUT_INFO_END
     }
-    else
-    {
-        // Reset shared_ptr to default
-        _bestXFeas.reset();
-    }
-    if (_bestXInf->isComplete())
+    if (_bestXInf)
     {
         // New EvalPoint to be evaluated.
         // Add it to the lists (local or in Search method).
@@ -552,11 +557,6 @@ void NOMAD::QuadModelOptimize::generateTrialPointsImp()
         AddOutputInfo(s);
         OUTPUT_INFO_END
         
-    }
-    else
-    {
-        // Reset shared_ptr to default
-        _bestXInf.reset();
     }
 }
 

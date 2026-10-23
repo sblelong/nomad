@@ -840,6 +840,10 @@ int solveNomadProblem(const NomadResult result,
 
     NOMAD::OutputQueue::Flush();
 
+    // Also reset after a failure: otherwise the next run reuses the cache,
+    // evaluator control, etc. left over by the failed one.
+    NOMAD::MainStep::resetComponentsBetweenOptimization();
+
     return runFlag;
 }
 
