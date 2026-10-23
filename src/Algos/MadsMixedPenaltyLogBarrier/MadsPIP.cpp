@@ -67,8 +67,6 @@
 
 void NOMAD::MadsPIP::init()
 {
-    printf("DEBUG MadsPIP::init() start\n");
-
     // Define the single-objective merit function with inequality constraints as penalty.
     std::function<NOMAD::Double(const NOMAD::BBOutputTypeList& bbOutputTypeList,
                                 const NOMAD::BBOutput& bbOutput)> meritZCompute = [&](const NOMAD::BBOutputTypeList& bbOutputTypeList,
@@ -213,22 +211,7 @@ void NOMAD::MadsPIP::init()
     auto evc = NOMAD::EvcInterface::getEvaluatorControl();
     evc->setComputeType(NOMAD::ComputeType::USER, meritZCompute, [](const NOMAD::BBOutputTypeList& bbOutputTypeList,
                                                                     const NOMAD::BBOutput& bbOutput){return NOMAD::Double(0);});
-
-     _logSwitchFeasThres = _runParams->getAttributeValue<NOMAD::Double>("MADSPIP_OPTIMIZATION_SWITCH_FEASIBILITY_THRESHOLD").todouble();
-    printf("DEBUG _logSwitchFeasThres = %f\n", _logSwitchFeasThres);
     
-    _b_rhobeta_rho = _runParams->getAttributeValue<NOMAD::Double>("MADSPIP_OPTIMIZATION_BRHOBETA_RHO").todouble();
-    printf("DEBUG _b_rhobeta_rho = %f\n", _b_rhobeta_rho);
-    
-    printf("DEBUG evc = %p\n", (void*)evc.get());
-
-    evc->setComputeType(NOMAD::ComputeType::USER, meritZCompute,
-                    [](const NOMAD::BBOutputTypeList& bbOutputTypeList,
-                       const NOMAD::BBOutput& bbOutput)
-                    {
-                        return NOMAD::Double(0);
-                    });
-    printf("DEBUG MadsPIP::init() end\n");
 }
 
 ///*-----------------------------------------------------*/
@@ -238,7 +221,6 @@ void NOMAD::MadsPIP::init()
 void NOMAD::MadsPIP::megaIterationCallback(const NOMAD::Step& step,
                                             bool &stop)
 {
-    printf("DEBUG megaIterationCallback: entered\n");
     auto iter = dynamic_cast<const NOMAD::MadsMegaIteration*>(&step);
     auto success_type = iter->getMadsIterationSuccess();
 
@@ -246,18 +228,13 @@ void NOMAD::MadsPIP::megaIterationCallback(const NOMAD::Step& step,
     {
         const auto & barrier = iter->getBarrier();
         const auto & bf = barrier->getCurrentIncumbentFeas();
-        printf("DEBUG megaIterationCallback: bf = %p\n", (void*)bf.get());
-
         const auto & evalType = barrier->getEvalType();
         auto evc = NOMAD::EvcInterface::getEvaluatorControl();
         const auto computeType = evc->getFHComputeTypeS();
-        printf("DEBUG megaIterationCallback: computeType obtained from evc\n");
 
         bool rhoHasChanged = false, typeHasChanged = false;
 
         const auto & allO = bf->getEval(evalType)->getBBOutput().getBBOAsArrayOfDouble();
-        printf("DEBUG megaIterationCallback: allO isDefined=%d size=%zu\n",
-               (int)allO.isDefined(), allO.size());
 
         OUTPUT_DEBUG_START
         std::string s = "Best feasible before update: BBO (" + allO.display() + "); meritZ=" + bf->getEval(evalType)->getFs(computeType).display() + "\n" ;
@@ -333,8 +310,6 @@ void NOMAD::MadsPIP::megaIterationCallback(const NOMAD::Step& step,
             cacheInterface.find(func, evalPointList);
             barrier->updateWithPoints(evalPointList,false, true /*update incumbent*/);
         }
-
-        printf("DEBUG megaIterationCallback: end\n");
     }
 }
 

@@ -591,7 +591,6 @@ public:
 void customMegaIterEndCbFunc(const NOMAD::Step& step,
                              bool &stop)
 {
-    printf("DEBUG customMegaIterEndCbFunc: entered\n");
     stop = false;
     
     // Important: by default USER_CALLS are disabled when doing quad model optimization
@@ -660,7 +659,6 @@ void customMegaIterEndCbFunc(const NOMAD::Step& step,
             //Force exit
         }
     }
-    printf("DEBUG customMegaIterEndCbFunc: end\n");
 }
 
 int solveNomadProblem(const NomadResult result,
@@ -746,26 +744,21 @@ int solveNomadProblem(const NomadResult result,
         
         TheMainStep.start();
         TheMainStep.run();
-        printf("DEBUG: TheMainStep.run() completed\n");
         
         // Get the points before ending the main step, as end() will reset some components of NOMAD.
         //
         // For single objective optimization, we have usually single feas/infeas incumbent points.
         // For multi-objective optimization, we have several feasible incumbent points but infeasible incumbent are not supported.
         auto evalPointFeasList = TheMainStep.getBarrierIncumbentPoints(true);
-        printf("DEBUG: getBarrierIncumbentPoints(true) returned %zu points\n", evalPointFeasList.size());
         auto evalPointInfList = TheMainStep.getBarrierIncumbentPoints(false);
-        printf("DEBUG: getBarrierIncumbentPoints(false) returned %zu points\n", evalPointInfList.size());
         
         TheMainStep.end();
-        printf("DEBUG: TheMainStep.end() completed\n");
 
         // Fallback to cache when getBarrierIncumbentPoints returns empty.
         // This happens when STOP_IF_FEASIBLE triggers during initialization
         // before _refMegaIteration is populated.
         if (evalPointFeasList.empty() && evalPointInfList.empty())
         {
-            printf("DEBUG: falling back to cache\n");
             const auto hNormType = nomad_problem->p->getAttributeValue<NOMAD::HNormType>("H_NORM");
             const NOMAD::FHComputeType computeType = {NOMAD::EvalType::BB, {NOMAD::ComputeType::STANDARD, hNormType}};
             NOMAD::CacheBase::getInstance()->findBestFeas(evalPointFeasList, NOMAD::Point(), computeType);
